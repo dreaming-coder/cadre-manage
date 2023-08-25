@@ -19,9 +19,9 @@ class User(Model):
     last_login_datetime：上次登录时间
     deleted：是否删除，0 表示正常用户，1 表示删除
     """
-    username = TextField(null=False, unique=True)
-    password = TextField(null=False)
-    permission = IntegerField(null=False, default=1)
-    create_datetime = DateTimeField(null=False, default=datetime.now(), formats="%Y-%m-%d %H:%M:%S")
-    last_login_datetime = DateTimeField(null=True, formats="%Y-%m-%d %H:%M:%S")
-    deleted = IntegerField(null=False, default=0)
+    username = TextField(unique=True)
+    password = TextField()
+    permission = IntegerField(default=1)
+    create_datetime = DateTimeField(default=datetime.now())
+    last_login_datetime = DateTimeField(null=True)
+    deleted = IntegerField(default=0)
