@@ -2,7 +2,6 @@ import functools
 import hashlib
 import importlib
 import inspect
-import json
 from datetime import datetime
 from sqlite3 import register_adapter, register_converter
 
@@ -10,7 +9,6 @@ from peewee import SqliteDatabase, Model
 
 from entity import User
 from settings import database, admin_username, default_password
-from util import ComplexEncoder
 from .adapter import adapt_datetime, adapt_date, adapt_time
 from .converter import convert_datetime, convert_date, convert_time
 
@@ -22,7 +20,7 @@ __all__ = [
 ]
 
 
-def table_name(name, **kwargs):
+def table_name(name):
     """
     给实体类设置表名，并设置数据库连接对象
     :param name: 表名
@@ -33,11 +31,11 @@ def table_name(name, **kwargs):
             cls._meta.database = db
             cls._meta.table_name = name
 
-            def obj2json(self):
+            def obj_dict(self):
                 fields_map = {}
                 for field in self.__data__.keys():
                     fields_map[field] = getattr(self, field)
-                return json.dumps(fields_map, cls=ComplexEncoder, **kwargs)
+                return fields_map
 
             def obj_print(self):
                 result = "\033[36;1m" + cls.__name__ + "\033[0m(\n"
@@ -48,7 +46,7 @@ def table_name(name, **kwargs):
                 return result
 
             cls.__str__ = functools.wraps(cls.__str__)(obj_print)
-            cls.json = obj2json
+            cls.json = obj_dict
         return cls
 
     return wrap
