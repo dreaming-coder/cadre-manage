@@ -1,5 +1,6 @@
-from .json import ComplexEncoder
+from .json import ComplexEncoder, json_dumps
 
 __all__ = [
-    "ComplexEncoder"
+    "ComplexEncoder",
+    "json_dumps"
 ]
