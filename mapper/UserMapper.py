@@ -1,9 +1,10 @@
 from typing import Optional
-
+from settings import default_password
 from entity import User
 from util import encrypt
 
 
+# noinspection PyShadowingBuiltins
 class UserMapper:
 
     @staticmethod
@@ -19,8 +20,8 @@ class UserMapper:
         return User.select().where((User.username == username) & (User.permission == 0)).exists()
 
     @staticmethod
-    def get_user_by_id(pk: int) -> Optional[User]:
-        return User.get_by_id(pk)
+    def get_user_by_id(id: int) -> Optional[User]:
+        return User.get_by_id(id)
 
     @staticmethod
     def get_user_by_name(username: str) -> Optional[User]:
@@ -39,23 +40,30 @@ class UserMapper:
         return [user for user in User.select()]
 
     @staticmethod
-    def insert(username: str, password: str, permission: int = 1) -> bool:
+    def insert(username: str, permission: int = 1) -> bool:
         """
         :param username: 用户名
-        :param password: 密码
         :param permission: 权限，默认值 1
         :return: 是否创建成功
         """
-        user, created = User.get_or_create(username=username, password=encrypt(password), permission=permission)
+        user, created = User.get_or_create(username=username, password=encrypt(default_password), permission=permission)
         return created
 
     @staticmethod
-    def update_password(username: str, new_password: str) -> None:
-        User.update(password=encrypt(new_password)).where(User.username == username).execute()
+    def update_password(id: int, new_password: str) -> None:
+        User.update(password=encrypt(new_password)).where(User.id == id).execute()
 
     @staticmethod
-    def delete_by_pk(pk: int) -> None:
-        User.delete_by_id(pk)
+    def reset_password(id: int) -> None:
+        UserMapper.update_password(id=id, new_password=default_password)
+
+    @staticmethod
+    def update_permission(id: int, permission: int) -> None:
+        User.update(permission=permission).where(User.id == id).execute()
+
+    @staticmethod
+    def delete_by_id(id: int) -> None:
+        User.delete_by_id(id)
 
     @staticmethod
     def delete_by_name(username: str) -> None:
