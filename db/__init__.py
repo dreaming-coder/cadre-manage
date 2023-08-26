@@ -7,8 +7,9 @@ from sqlite3 import register_adapter, register_converter
 
 from peewee import SqliteDatabase, Model
 
-from entity import User
+import entity
 from settings import database, admin_username, default_password
+from util import encrypt
 from .adapter import adapt_datetime, adapt_date, adapt_time
 from .converter import convert_datetime, convert_date, convert_time
 
@@ -16,7 +17,7 @@ db = SqliteDatabase(database=database)
 
 __all__ = [
     "table_name",
-    "init_db",
+    "reset_db",
 ]
 
 
@@ -53,28 +54,19 @@ def table_name(name):
 
 
 register_adapter(datetime, adapt_datetime)
-register_adapter(datetime, adapt_date)
-register_adapter(datetime, adapt_time)
 
 register_converter("datetime", convert_datetime)
-register_converter("date", convert_date)
-register_converter("time", convert_time)
 
 
 def init_admin():
     """
     初始化管理员密码
     """
-    md5 = hashlib.md5()
-    md5.update(default_password.encode("utf-8"))
-    admin = User(username=admin_username, password=md5.hexdigest(), permission=0)
+    admin = entity.User(username=admin_username, password=encrypt("123456"), permission=0)
     admin.save()
 
 
-def init_db():
-    """
-    初始化数据库
-    """
+def init_tables():
     try:
         db.connect()
         # 动态获取指定模块
@@ -83,30 +75,19 @@ def init_db():
         class_list = inspect.getmembers(module, inspect.isclass)
         tables = list(zip(*class_list))[1]
         db.create_tables(tables)
-        init_admin()
     except Exception as e:
         print(e)
     finally:
         db.close()
 
 
-def __reset_db():
+def reset_db():
     """
-    重置数据库
+    初始化数据库
     """
-    try:
-        db.connect()
-        module = importlib.import_module("entity")
-        class_list = inspect.getmembers(module, inspect.isclass)
-        tables = list(zip(*class_list))[1]
-        db.drop_tables(tables)
-        db.create_tables(tables)
-        init_admin()
-    except Exception as e:
-        print(e)
-    finally:
-        db.close()
+    init_tables()
+    init_admin()
 
 
 if __name__ == '__main__':
-    __reset_db()
+    reset_db()
