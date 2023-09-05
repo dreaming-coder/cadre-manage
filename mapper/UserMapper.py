@@ -1,5 +1,6 @@
 from typing import Optional
-from settings import default_password
+
+from config import Config
 from entity import User
 from util import encrypt
 
@@ -8,16 +9,16 @@ from util import encrypt
 class UserMapper:
 
     @staticmethod
-    def check_password(username: str, password: str) -> bool:
+    def check_password(username: str, password: str) -> tuple[Optional[User], bool]:
         user = UserMapper.get_user_by_name(username)
-        if user is not None:
-            return user.password == encrypt(password)
-        return False
+        if user is not None and user.deleted == 0 and user.password == encrypt(password):
+            return user, True
+        return None, False
 
     @staticmethod
     def is_admin(username: str) -> bool:
         """是否是管理员"""
-        return User.select().where((User.username == username) & (User.permission == 0)).exists()
+        return User.select().where((User.username == username) & (User.permission <= 0)).exists()
 
     @staticmethod
     def get_user_by_id(id: int) -> Optional[User]:
@@ -37,25 +38,31 @@ class UserMapper:
 
     @staticmethod
     def get_all_users() -> list[User]:
-        return [user for user in User.select()]
+        return [user for user in User.select() if user.permission >= 0]
 
     @staticmethod
-    def insert(username: str, permission: int = 1) -> bool:
+    def insert(username: str, permission: int = 1) -> tuple[User, bool]:
         """
         :param username: 用户名
         :param permission: 权限，默认值 1
         :return: 是否创建成功
         """
-        user, created = User.get_or_create(username=username, password=encrypt(default_password), permission=permission)
-        return created
+        user, created = User.get_or_create(username=username, password=encrypt(Config["default_password"]),
+                                           permission=permission)
+        return user, created
 
     @staticmethod
-    def update_password(id: int, new_password: str) -> None:
-        User.update(password=encrypt(new_password)).where(User.id == id).execute()
+    def update_password(id: int, old_password: Optional[str], new_password: str) -> bool:
+        user = User.get_by_id(id)
+        if old_password is not None and user.password != encrypt(old_password):
+            return False
+        else:
+            User.update(password=encrypt(new_password)).where(User.id == id).execute()
+            return True
 
     @staticmethod
     def reset_password(id: int) -> None:
-        UserMapper.update_password(id=id, new_password=default_password)
+        UserMapper.update_password(id=id, old_password=None, new_password=Config["default_password"])
 
     @staticmethod
     def update_permission(id: int, permission: int) -> None:
@@ -63,12 +70,15 @@ class UserMapper:
 
     @staticmethod
     def delete_by_id(id: int) -> None:
-        User.delete_by_id(id)
+        User.update(deleted=1).where(User.id == id).execute()
 
     @staticmethod
     def delete_by_name(username: str) -> None:
-        User.delete().where(User.username == username).execute()
+        User.update(deleted=1).where(User.username == username).execute()
 
     @staticmethod
     def delete_instance(user: User) -> None:
-        user.delete_instance()
+        User.update(deleted=1).where(User.id == user.id).execute()
+
+
+userMapper = UserMapper()

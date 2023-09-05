@@ -1,5 +1,4 @@
 import functools
-import hashlib
 import importlib
 import inspect
 from datetime import datetime
@@ -8,12 +7,12 @@ from sqlite3 import register_adapter, register_converter
 from peewee import SqliteDatabase, Model
 
 import entity
-from settings import database, admin_username, default_password
+from config import Config
 from util import encrypt
 from .adapter import adapt_datetime, adapt_date, adapt_time
 from .converter import convert_datetime, convert_date, convert_time
 
-db = SqliteDatabase(database=database)
+db = SqliteDatabase(database=Config["database"])
 
 __all__ = [
     "table_name",
@@ -62,8 +61,9 @@ def init_admin():
     """
     初始化管理员密码
     """
-    admin = entity.User(username=admin_username, password=encrypt("123456"), permission=0)
-    admin.save()
+    admin = entity.User(username=Config["admin_username"],
+                        password=encrypt(Config["default_password"]), permission=-1)
+    admin.get_or_create()
 
 
 def init_tables():

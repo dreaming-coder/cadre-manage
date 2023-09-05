@@ -1,0 +1,6 @@
+{
+  "database": "db/data.db",
+  "admin_username": "admin",
+  "default_password": "123456",
+  "SECRET_KEY": "moves like jagger"
+}
